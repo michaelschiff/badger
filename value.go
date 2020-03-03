@@ -42,6 +42,7 @@ import (
 	"github.com/dgraph-io/badger/v2/pb"
 	"github.com/dgraph-io/badger/v2/y"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"golang.org/x/net/trace"
 )
 
@@ -77,7 +78,7 @@ type logFile struct {
 	// Use shared ownership when reading/writing the file or memory map, use
 	// exclusive ownership to open/close the descriptor, unmap or remove the file.
 	lock        sync.RWMutex
-	fd          *os.File
+	fd          afero.File
 	fid         uint32
 	fmap        []byte
 	size        uint32

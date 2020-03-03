@@ -37,7 +37,7 @@ const (
 	FILE_FLAG_DELETE_ON_CLOSE = 0x04000000
 )
 
-func openDir(path string) (*os.File, error) {
+func openDir(path string) (afero.File, error) {
 	fd, err := openDirWin(path)
 	if err != nil {
 		return nil, err

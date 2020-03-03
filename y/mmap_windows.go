@@ -20,12 +20,13 @@ package y
 
 import (
 	"fmt"
+	"github.com/spf13/afero"
 	"os"
 	"syscall"
 	"unsafe"
 )
 
-func mmap(fd *os.File, write bool, size int64) ([]byte, error) {
+func mmap(f afero.File, write bool, size int64) ([]byte, error) {
 	protect := syscall.PAGE_READONLY
 	access := syscall.FILE_MAP_READ
 
@@ -33,7 +34,7 @@ func mmap(fd *os.File, write bool, size int64) ([]byte, error) {
 		protect = syscall.PAGE_READWRITE
 		access = syscall.FILE_MAP_WRITE
 	}
-	fi, err := fd.Stat()
+	fi, err := f.Stat()
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func mmap(fd *os.File, write bool, size int64) ([]byte, error) {
 	// In windows, we cannot mmap a file more than it's actual size.
 	// So truncate the file to the size of the mmap.
 	if fi.Size() < size {
-		if err := fd.Truncate(size); err != nil {
+		if err := f.Truncate(size); err != nil {
 			return nil, fmt.Errorf("truncate: %s", err)
 		}
 	}
@@ -50,7 +51,11 @@ func mmap(fd *os.File, write bool, size int64) ([]byte, error) {
 	sizelo := uint32(size >> 32)
 	sizehi := uint32(size) & 0xffffffff
 
-	handler, err := syscall.CreateFileMapping(syscall.Handle(fd.Fd()), nil,
+	fd, err := underlyingFd(f)
+	if err != nil {
+		return nil, err
+	}
+	handler, err := syscall.CreateFileMapping(syscall.Handle(fd), nil,
 		uint32(protect), sizelo, sizehi, nil)
 	if err != nil {
 		return nil, os.NewSyscallError("CreateFileMapping", err)

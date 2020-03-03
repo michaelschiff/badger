@@ -32,6 +32,7 @@ import (
 	"github.com/dgraph-io/badger/v2/y"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 // Manifest represents the contents of the MANIFEST file in a Badger store.
@@ -77,7 +78,7 @@ type TableManifest struct {
 // manifestFile holds the file pointer (and other info) about the manifest file, which is a log
 // file we append to.
 type manifestFile struct {
-	fp        *os.File
+	fp        afero.File
 	directory string
 	// We make this configurable so that unit tests can hit rewrite() code quickly
 	deletionsRewriteThreshold int
@@ -240,7 +241,7 @@ var magicText = [4]byte{'B', 'd', 'g', 'r'}
 // The magic version number.
 const magicVersion = 7
 
-func helpRewrite(dir string, m *Manifest) (*os.File, int, error) {
+func helpRewrite(dir string, m *Manifest) (afero.File, int, error) {
 	rewritePath := filepath.Join(dir, manifestRewriteFilename)
 	// We explicitly sync.
 	fp, err := y.OpenTruncFile(rewritePath, false)
@@ -345,7 +346,7 @@ var (
 // Also, returns the last offset after a completely read manifest entry -- the file must be
 // truncated at that point before further appends are made (if there is a partial entry after
 // that).  In normal conditions, truncOffset is the file size.
-func ReplayManifestFile(fp *os.File) (Manifest, int64, error) {
+func ReplayManifestFile(fp afero.File) (Manifest, int64, error) {
 	r := countingReader{wrapped: bufio.NewReader(fp)}
 
 	var magicBuf [8]byte

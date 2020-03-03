@@ -17,12 +17,12 @@
 package y
 
 import (
-	"os"
+	"github.com/spf13/afero"
 )
 
 // Mmap uses the mmap system call to memory-map a file. If writable is true,
 // memory protection of the pages is set so that they may be written to as well.
-func Mmap(fd *os.File, writable bool, size int64) ([]byte, error) {
+func Mmap(fd afero.File, writable bool, size int64) ([]byte, error) {
 	return mmap(fd, writable, size)
 }
 

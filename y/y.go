@@ -30,11 +30,14 @@ import (
 	"unsafe"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 )
 
 // ErrEOF indicates an end of file when trying to read from a memory mapped file
 // and encountering the end of slice.
 var ErrEOF = errors.New("End of mapped region")
+
+var Fs = afero.NewOsFs()
 
 const (
 	// Sync indicates that O_DSYNC should be set on the underlying file,
@@ -57,7 +60,7 @@ var (
 )
 
 // OpenExistingFile opens an existing file, errors if it doesn't exist.
-func OpenExistingFile(filename string, flags uint32) (*os.File, error) {
+func OpenExistingFile(filename string, flags uint32) (afero.File, error) {
 	openFlags := os.O_RDWR
 	if flags&ReadOnly != 0 {
 		openFlags = os.O_RDONLY
@@ -66,34 +69,34 @@ func OpenExistingFile(filename string, flags uint32) (*os.File, error) {
 	if flags&Sync != 0 {
 		openFlags |= datasyncFileFlag
 	}
-	return os.OpenFile(filename, openFlags, 0)
+	return Fs.OpenFile(filename, openFlags, 0)
 }
 
 // CreateSyncedFile creates a new file (using O_EXCL), errors if it already existed.
-func CreateSyncedFile(filename string, sync bool) (*os.File, error) {
+func CreateSyncedFile(filename string, sync bool) (afero.File, error) {
 	flags := os.O_RDWR | os.O_CREATE | os.O_EXCL
 	if sync {
 		flags |= datasyncFileFlag
 	}
-	return os.OpenFile(filename, flags, 0600)
+	return Fs.OpenFile(filename, flags, 0600)
 }
 
 // OpenSyncedFile creates the file if one doesn't exist.
-func OpenSyncedFile(filename string, sync bool) (*os.File, error) {
+func OpenSyncedFile(filename string, sync bool) (afero.File, error) {
 	flags := os.O_RDWR | os.O_CREATE
 	if sync {
 		flags |= datasyncFileFlag
 	}
-	return os.OpenFile(filename, flags, 0600)
+	return Fs.OpenFile(filename, flags, 0600)
 }
 
 // OpenTruncFile opens the file with O_RDWR | O_CREATE | O_TRUNC
-func OpenTruncFile(filename string, sync bool) (*os.File, error) {
+func OpenTruncFile(filename string, sync bool) (afero.File, error) {
 	flags := os.O_RDWR | os.O_CREATE | os.O_TRUNC
 	if sync {
 		flags |= datasyncFileFlag
 	}
-	return os.OpenFile(filename, flags, 0600)
+	return Fs.OpenFile(filename, flags, 0600)
 }
 
 // SafeCopy does append(a[:0], src...).

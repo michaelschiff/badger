@@ -34,6 +34,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 
 	"github.com/dgraph-io/badger/v2/options"
 	"github.com/dgraph-io/badger/v2/pb"
@@ -86,8 +87,8 @@ type TableInterface interface {
 type Table struct {
 	sync.Mutex
 
-	fd        *os.File // Own fd.
-	tableSize int      // Initialized in OpenTable, using fd.Stat().
+	fd        afero.File // Own fd.
+	tableSize int        // Initialized in OpenTable, using fd.Stat().
 
 	blockIndex []*pb.BlockOffset
 	ref        int32 // For file garbage collection. Atomic.
@@ -185,7 +186,7 @@ func (b block) verifyCheckSum() error {
 // entry. Returns a table with one reference count on it (decrementing which may delete the file!
 // -- consider t.Close() instead). The fd has to writeable because we call Truncate on it before
 // deleting. Checksum for all blocks of table is verified based on value of chkMode.
-func OpenTable(fd *os.File, opts Options) (*Table, error) {
+func OpenTable(fd afero.File, opts Options) (*Table, error) {
 	fileInfo, err := fd.Stat()
 	if err != nil {
 		// It's OK to ignore fd.Close() errs in this function because we have only read

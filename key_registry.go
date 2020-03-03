@@ -30,6 +30,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2/pb"
 	"github.com/dgraph-io/badger/v2/y"
+	"github.com/spf13/afero"
 )
 
 const (
@@ -48,7 +49,7 @@ type KeyRegistry struct {
 	dataKeys    map[uint64]*pb.DataKey
 	lastCreated int64 //lastCreated is the timestamp(seconds) of the last data key generated.
 	nextKeyID   uint64
-	fp          *os.File
+	fp          afero.File
 	opt         KeyRegistryOptions
 }
 
@@ -131,14 +132,14 @@ func OpenKeyRegistry(opt KeyRegistryOptions) (*KeyRegistry, error) {
 // keyRegistryIterator reads all the datakey from the key registry
 type keyRegistryIterator struct {
 	encryptionKey []byte
-	fp            *os.File
+	fp            afero.File
 	// lenCrcBuf contains crc buf and data length to move forward.
 	lenCrcBuf [8]byte
 }
 
 // newKeyRegistryIterator returns iterator which will allow you to iterate
 // over the data key of the key registry.
-func newKeyRegistryIterator(fp *os.File, encryptionKey []byte) (*keyRegistryIterator, error) {
+func newKeyRegistryIterator(fp afero.File, encryptionKey []byte) (*keyRegistryIterator, error) {
 	return &keyRegistryIterator{
 		encryptionKey: encryptionKey,
 		fp:            fp,
@@ -147,7 +148,7 @@ func newKeyRegistryIterator(fp *os.File, encryptionKey []byte) (*keyRegistryIter
 }
 
 // validRegistry checks that given encryption key is valid or not.
-func validRegistry(fp *os.File, encryptionKey []byte) error {
+func validRegistry(fp afero.File, encryptionKey []byte) error {
 	iv := make([]byte, aes.BlockSize)
 	var err error
 	if _, err = fp.Read(iv); err != nil {
@@ -208,7 +209,7 @@ func (kri *keyRegistryIterator) next() (*pb.DataKey, error) {
 }
 
 // readKeyRegistry will read the key registry file and build the key registry struct.
-func readKeyRegistry(fp *os.File, opt KeyRegistryOptions) (*KeyRegistry, error) {
+func readKeyRegistry(fp afero.File, opt KeyRegistryOptions) (*KeyRegistry, error) {
 	itr, err := newKeyRegistryIterator(fp, opt.EncryptionKey)
 	if err != nil {
 		return nil, err

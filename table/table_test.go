@@ -32,6 +32,7 @@ import (
 	"github.com/dgraph-io/badger/v2/options"
 	"github.com/dgraph-io/badger/v2/y"
 	"github.com/dgraph-io/ristretto"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
 
@@ -54,7 +55,7 @@ func getTestTableOptions() Options {
 	}
 
 }
-func buildTestTable(t *testing.T, prefix string, n int, opts Options) *os.File {
+func buildTestTable(t *testing.T, prefix string, n int, opts Options) afero.File {
 	if opts.BloomFalsePositive == 0 {
 		opts.BloomFalsePositive = 0.01
 	}
@@ -72,7 +73,7 @@ func buildTestTable(t *testing.T, prefix string, n int, opts Options) *os.File {
 }
 
 // keyValues is n by 2 where n is number of pairs.
-func buildTable(t *testing.T, keyValues [][]string, opts Options) *os.File {
+func buildTable(t *testing.T, keyValues [][]string, opts Options) afero.File {
 	b := NewTableBuilder(opts)
 	defer b.Close()
 	// TODO: Add test for file garbage collection here. No files should be left after the tests here.

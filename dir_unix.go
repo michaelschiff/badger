@@ -26,6 +26,7 @@ import (
 
 	"github.com/dgraph-io/badger/v2/y"
 	"github.com/pkg/errors"
+	"github.com/spf13/afero"
 	"golang.org/x/sys/unix"
 )
 
@@ -33,7 +34,7 @@ import (
 // of the locking mechanism, it's just advisory.
 type directoryLockGuard struct {
 	// File handle on the directory, which we've flocked.
-	f *os.File
+	f afero.File
 	// The absolute path to our pid file.
 	path string
 	// Was this a shared lock for a read-only database?
@@ -51,7 +52,7 @@ func acquireDirectoryLock(dirPath string, pidFileName string, readOnly bool) (
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot get absolute path for pid lock file")
 	}
-	f, err := os.Open(dirPath)
+	f, err := y.Fs.Open(dirPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "cannot open directory %q", dirPath)
 	}
@@ -60,7 +61,7 @@ func acquireDirectoryLock(dirPath string, pidFileName string, readOnly bool) (
 		opts = unix.LOCK_SH | unix.LOCK_NB
 	}
 
-	err = unix.Flock(int(f.Fd()), opts)
+	err = unix.Flock(int(f.(*os.File).Fd()), opts)
 	if err != nil {
 		f.Close()
 		return nil, errors.Wrapf(err,
@@ -99,7 +100,7 @@ func (guard *directoryLockGuard) release() error {
 }
 
 // openDir opens a directory for syncing.
-func openDir(path string) (*os.File, error) { return os.Open(path) }
+func openDir(path string) (afero.File, error) { return y.Fs.Open(path) }
 
 // When you create or delete a file, you have to ensure the directory entry for the file is synced
 // in order to guarantee the file is visible (if the system crashes). (See the man page for fsync,

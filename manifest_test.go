@@ -31,8 +31,11 @@ import (
 	"github.com/dgraph-io/badger/v2/pb"
 	"github.com/dgraph-io/badger/v2/table"
 	"github.com/dgraph-io/badger/v2/y"
+	"github.com/spf13/afero"
 	"github.com/stretchr/testify/require"
 )
+
+var fs = afero.NewOsFs()
 
 func TestManifestBasic(t *testing.T) {
 	dir, err := ioutil.TempDir("", "badger-test")
@@ -80,7 +83,7 @@ func helpTestManifestFileCorruption(t *testing.T, off int64, errorContent string
 		require.NoError(t, err)
 		require.NoError(t, kv.Close())
 	}
-	fp, err := os.OpenFile(filepath.Join(dir, ManifestFilename), os.O_RDWR, 0)
+	fp, err := fs.OpenFile(filepath.Join(dir, ManifestFilename), os.O_RDWR, 0)
 	require.NoError(t, err)
 	// Mess with magic value or version to force error
 	_, err = fp.WriteAt([]byte{'X'}, off)
@@ -112,7 +115,7 @@ func key(prefix string, i int) string {
 	return prefix + fmt.Sprintf("%04d", i)
 }
 
-func buildTestTable(t *testing.T, prefix string, n int, opts table.Options) *os.File {
+func buildTestTable(t *testing.T, prefix string, n int, opts table.Options) afero.File {
 	y.AssertTrue(n <= 10000)
 	keyValues := make([][]string, n)
 	for i := 0; i < n; i++ {
@@ -125,7 +128,7 @@ func buildTestTable(t *testing.T, prefix string, n int, opts table.Options) *os.
 
 // TODO - Move these to somewhere where table package can also use it.
 // keyValues is n by 2 where n is number of pairs.
-func buildTable(t *testing.T, keyValues [][]string, bopts table.Options) *os.File {
+func buildTable(t *testing.T, keyValues [][]string, bopts table.Options) afero.File {
 	if bopts.BloomFalsePositive == 0 {
 		bopts.BloomFalsePositive = 0.01
 	}
